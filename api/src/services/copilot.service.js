@@ -4,7 +4,16 @@
 // does the UI call PATCH /applications/:id/stage (which checks the rules again).
 import { prisma } from '../db.js';
 import { HttpError } from '../lib/errors.js';
-import { allowedNextStages, canTransition, STAGE_LABELS, STAGES, transitionError } from '../lib/stages.js';
+import {
+  allowedNextStages,
+  canTransition,
+  COPILOT_MOVE_REFUSAL,
+  COPILOT_TO_STAGE,
+  copilotCanMove,
+  STAGE_LABELS,
+  STAGES,
+  transitionError,
+} from '../lib/stages.js';
 import { chat } from './llm.js';
 import { findJobOr404 } from './jobs.service.js';
 import { scoreApplicants } from './scoring.service.js';
@@ -16,7 +25,8 @@ const SYSTEM_PROMPT = `You are a recruiting assistant for ONE job. Help the recr
 Rules:
 - Answer ONLY from the job data below and your tools' results. Never invent candidates or facts.
 - If the data doesn't answer the question, say you don't know.
-- To move candidates, call move_stage. It does NOT move anyone: the recruiter confirms in the app. Say who you propose to move and that they need to confirm. Never say a move is done.
+- You may ONLY move candidates from Applied to Screening. Never propose any other move: not Screening to Interview, not later stages, not rejections. If asked for one, say the recruiter must do it with the buttons on the candidate's card.
+- To move candidates from Applied to Screening, call move_stage. It does NOT move anyone: the recruiter confirms in the app. Say who you propose to move and that they need to confirm. Never say a move is done.
 - If move_stage says a move isn't allowed, explain why.
 - Call auto_score ONLY when the recruiter explicitly asks to score, screen or rank applicants. It scores candidates in the Applied stage and proposes moving the ones who pass to Screening.
 - If a name matches more than one candidate, or none, say so instead of guessing.
@@ -41,12 +51,12 @@ const TOOLS = [
     function: {
       name: 'move_stage',
       description:
-        'Proposes moving one or more applications to a stage. Nothing moves until the recruiter confirms. Moves that break the stage rules are refused with the reason.',
+        'Proposes moving one or more applications from Applied to Screening (the only move the assistant may make). Nothing moves until the recruiter confirms. Any other move is refused.',
       parameters: {
         type: 'object',
         properties: {
           application_ids: { type: 'array', items: { type: 'string' }, description: 'Application ids to move.' },
-          to_stage: { type: 'string', enum: STAGES, description: 'The stage to move them to.' },
+          to_stage: { type: 'string', enum: [COPILOT_TO_STAGE], description: 'Always SCREENING.' },
         },
         required: ['application_ids', 'to_stage'],
       },
@@ -100,6 +110,9 @@ async function proposeMoves(jobId, applicationIds, toStage, pendingActions) {
     const app = await prisma.application.findFirst({ where: { id, jobId }, include: { candidate: true } });
     if (!app) {
       results.push(`${id}: no application with that id on this job.`);
+    } else if (!copilotCanMove(app.stage, toStage)) {
+      // Hard limit on the assistant, whatever the AI asked for.
+      results.push(`${app.candidate.fullName}: not allowed. ${COPILOT_MOVE_REFUSAL}`);
     } else if (!canTransition(app.stage, toStage)) {
       results.push(`${app.candidate.fullName}: not allowed. ${transitionError(app.stage, toStage)}`);
     } else {
