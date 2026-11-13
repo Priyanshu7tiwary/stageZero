@@ -12,6 +12,7 @@ export function jobJson(job, applicationCount = 0) {
     skills: job.skills,
     minExperienceYears: job.minExperienceYears,
     skillsWeight: job.skillsWeight,
+    screeningPassCount: job.screeningPassCount,
     closingDate: dateToDay(job.closingDate),
     applicationCount,
     acceptingApplications: isAcceptingApplications(job),
@@ -26,6 +27,9 @@ export function applicationJson(app) {
     jobId: app.jobId,
     stage: app.stage,
     referred: app.referred,
+    score: app.score,
+    scoreSummary: app.scoreSummary,
+    passedScreening: app.passedScreening,
     createdAt: app.createdAt.toISOString(),
     updatedAt: app.updatedAt.toISOString(),
     candidate: {

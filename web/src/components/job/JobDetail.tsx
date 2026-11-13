@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
 import { AddCandidateForm } from "./AddCandidateForm";
+import { CopilotPanel } from "@/components/copilot/CopilotPanel";
 import { JobRequirements } from "./JobRequirements";
 import { PipelineBoard, PipelineBoardSkeleton } from "./PipelineBoard";
 
@@ -90,74 +91,80 @@ function JobWorkspace({ job }: { job: Job }) {
         )}
       </div>
 
-      <section className="min-w-0 space-y-4" aria-label="Pipeline">
-        <JobRequirements job={job} />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <section className="min-w-0 space-y-4" aria-label="Pipeline">
+          <JobRequirements job={job} />
 
-        {showAdd && !isClosed && (
-          <AddCandidateForm jobId={job.id} onDone={() => setShowAdd(false)} />
-        )}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search candidates by name"
-            aria-label="Search candidates by name"
-            className="h-9 w-full max-w-xs rounded-md border-0 bg-white px-3 text-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900 focus:outline-none"
-          />
-          <select
-            value={stage}
-            onChange={(e) => setStage(e.target.value as Stage | "")}
-            aria-label="Filter by stage"
-            className="h-9 rounded-md border-0 bg-white px-3 text-sm ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:outline-none"
-          >
-            <option value="">All stages</option>
-            {STAGES.map((s) => (
-              <option key={s} value={s}>
-                {stageLabel(s)}
-              </option>
-            ))}
-          </select>
-          {isFiltered && (
-            <Button variant="ghost" onClick={() => { setSearch(""); setStage(""); }}>
-              Clear
-            </Button>
+          {showAdd && !isClosed && (
+            <AddCandidateForm jobId={job.id} onDone={() => setShowAdd(false)} />
           )}
-          {applications.isFetching && !applications.isPending && (
-            <Spinner className="size-4 text-zinc-400" />
-          )}
-        </div>
 
-        {applications.isPending ? (
-          <PipelineBoardSkeleton />
-        ) : applications.isError ? (
-          <ErrorState
-            title="Couldn't load candidates"
-            message={errorMessage(applications.error)}
-            onRetry={() => applications.refetch()}
-          />
-        ) : applications.data.length === 0 ? (
-          isFiltered ? (
-            <EmptyState
-              title="No candidates match"
-              message="Try a different name or stage."
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search candidates by name"
+              aria-label="Search candidates by name"
+              className="h-9 w-full max-w-xs rounded-md border-0 bg-white px-3 text-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900 focus:outline-none"
             />
+            <select
+              value={stage}
+              onChange={(e) => setStage(e.target.value as Stage | "")}
+              aria-label="Filter by stage"
+              className="h-9 rounded-md border-0 bg-white px-3 text-sm ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-zinc-900 focus:outline-none"
+            >
+              <option value="">All stages</option>
+              {STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {stageLabel(s)}
+                </option>
+              ))}
+            </select>
+            {isFiltered && (
+              <Button variant="ghost" onClick={() => { setSearch(""); setStage(""); }}>
+                Clear
+              </Button>
+            )}
+            {applications.isFetching && !applications.isPending && (
+              <Spinner className="size-4 text-zinc-400" />
+            )}
+          </div>
+
+          {applications.isPending ? (
+            <PipelineBoardSkeleton />
+          ) : applications.isError ? (
+            <ErrorState
+              title="Couldn't load candidates"
+              message={errorMessage(applications.error)}
+              onRetry={() => applications.refetch()}
+            />
+          ) : applications.data.length === 0 ? (
+            isFiltered ? (
+              <EmptyState
+                title="No candidates match"
+                message="Try a different name or stage."
+              />
+            ) : (
+              <EmptyState
+                title="No candidates yet"
+                message={isClosed ? "This job closed before anyone applied." : "Add the first candidate to start the pipeline."}
+                action={!isClosed && !showAdd && <Button onClick={() => setShowAdd(true)}>Add candidate</Button>}
+              />
+            )
           ) : (
-            <EmptyState
-              title="No candidates yet"
-              message={isClosed ? "This job closed before anyone applied." : "Add the first candidate to start the pipeline."}
-              action={!isClosed && !showAdd && <Button onClick={() => setShowAdd(true)}>Add candidate</Button>}
+            <PipelineBoard
+              jobId={job.id}
+              applications={applications.data}
+              stages={filters.stage ? [filters.stage] : [...STAGES]}
             />
-          )
-        ) : (
-          <PipelineBoard
-            jobId={job.id}
-            applications={applications.data}
-            stages={filters.stage ? [filters.stage] : [...STAGES]}
-          />
-        )}
-      </section>
+          )}
+        </section>
+
+        <aside className="xl:sticky xl:top-6 xl:self-start">
+          <CopilotPanel jobId={job.id} />
+        </aside>
+      </div>
     </div>
   );
 }

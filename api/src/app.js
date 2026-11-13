@@ -3,6 +3,7 @@ import express from 'express';
 import { config } from './config.js';
 import { errorHandler, notFoundRoute } from './lib/errors.js';
 import { applicationRoutes } from './routes/applications.routes.js';
+import { copilotRoutes } from './routes/copilot.routes.js';
 import { dashboardRoutes } from './routes/dashboard.routes.js';
 import { jobRoutes } from './routes/jobs.routes.js';
 
@@ -17,6 +18,7 @@ export function createApp() {
   app.use(dashboardRoutes);
   app.use(jobRoutes);
   app.use(applicationRoutes);
+  app.use(copilotRoutes);
 
   app.use(notFoundRoute);
   app.use(errorHandler);

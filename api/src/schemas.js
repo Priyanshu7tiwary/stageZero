@@ -49,6 +49,8 @@ export const createJobSchema = z.object({
   minExperienceYears: wholeNumber('Experience', 0, 50),
   // 0–100: how much skills count against experience (experience gets the rest).
   skillsWeight: wholeNumber('Skills weight', 0, 100).default(50),
+  // How many top-scoring Applied candidates pass auto-scoring.
+  screeningPassCount: wholeNumber('Number of candidates', 1, 100).default(2),
   closingDate: calendarDate.nullable().default(null),
 });
 
@@ -78,3 +80,11 @@ export const listApplicationsSchema = z.object({
   search: z.string().trim().max(100, 'Search must be 100 characters or fewer').optional(),
 });
 
+export const copilotSchema = z.object({
+  question: requiredText('Question', 1000),
+  // Earlier turns, so follow-up questions have context.
+  history: z
+    .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(8000) }))
+    .max(20)
+    .default([]),
+});

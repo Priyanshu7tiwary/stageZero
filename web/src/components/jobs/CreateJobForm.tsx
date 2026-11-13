@@ -20,6 +20,7 @@ interface Values {
   skills: string[];
   minExperienceYears: string;
   skillsWeight: number;
+  screeningPassCount: string;
   closingDate: string;
 }
 
@@ -30,6 +31,7 @@ const EMPTY: Values = {
   skills: [],
   minExperienceYears: "",
   skillsWeight: 50,
+  screeningPassCount: "2",
   closingDate: "",
 };
 
@@ -143,6 +145,19 @@ export function CreateJobForm({
           />
         </div>
         <WeightSlider skillsWeight={values.skillsWeight} onChange={(w) => set("skillsWeight", w)} />
+        <div className="sm:w-1/2">
+          <TextField
+            label="Candidates who pass auto-scoring"
+            hint="(top scores)"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={100}
+            value={values.screeningPassCount}
+            onChange={(e) => set("screeningPassCount", e.target.value)}
+            error={errors.screeningPassCount}
+          />
+        </div>
       </Section>
 
 

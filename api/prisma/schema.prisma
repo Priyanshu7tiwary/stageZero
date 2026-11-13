@@ -35,6 +35,8 @@ model Job {
   minExperienceYears Int           @default(0)
   /// 0–100: how much skills count against experience (experience gets the rest).
   skillsWeight       Int           @default(50)
+  /// How many top-scoring Applied candidates pass auto-scoring.
+  screeningPassCount Int           @default(2)
   /// Last day applications are accepted. Null = no deadline.
   closingDate        DateTime?     @db.Date
   createdAt          DateTime      @default(now())
@@ -63,6 +65,10 @@ model Application {
   stage       Stage      @default(APPLIED)
   /// Came in through a referral (referral flow to come).
   referred    Boolean    @default(false)
+  /// Set by auto-scoring (0–100), with a one-line reason; null until scored.
+  score           Int?
+  scoreSummary    String?
+  passedScreening Boolean?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)

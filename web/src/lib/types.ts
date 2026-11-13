@@ -31,6 +31,8 @@ export interface Job {
   minExperienceYears: number;
   /** 0–100: how much skills count against experience (experience gets the rest). */
   skillsWeight: number;
+  /** How many top-scoring Applied candidates pass auto-scoring. */
+  screeningPassCount: number;
   /** Last day applications are accepted (YYYY-MM-DD), or null for no deadline. */
   closingDate: string | null;
   /** False when the job is closed or its closing date has passed (server clock). */
@@ -54,6 +56,10 @@ export interface Application {
   updatedAt: string;
   candidate: Candidate;
   allowedNextStages: Stage[];
+  /** From auto-scoring (0–100); null until scored. */
+  score: number | null;
+  scoreSummary: string | null;
+  passedScreening: boolean | null;
   /** Came in through a referral. (Referral flow TBD; set by the API for now.) */
   referred: boolean;
 }
@@ -65,6 +71,7 @@ export interface CreateJobInput {
   skills: string[];
   minExperienceYears: number;
   skillsWeight: number;
+  screeningPassCount: number;
   closingDate: string | null;
 }
 
@@ -106,3 +113,33 @@ export interface DashboardStats {
   byStage: Record<Stage, number>;
 }
 
+// ---- Copilot ----
+
+export interface CopilotTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface CopilotRequest {
+  question: string;
+  /** Earlier turns, so follow-up questions have context. */
+  history: CopilotTurn[];
+}
+
+/** A data-changing tool call the model proposed. Never executed server-side
+ *  without the user confirming it in the UI first. */
+export interface PendingMoveStage {
+  tool: "move_stage";
+  applicationId: string;
+  candidateName: string;
+  fromStage: Stage;
+  toStage: Stage;
+  /** Set when the move comes from auto-scoring. */
+  score: number | null;
+}
+
+export interface CopilotResponse {
+  answer: string;
+  /** Present when the model wants to change data. Empty for plain answers. */
+  pendingActions: PendingMoveStage[];
+}

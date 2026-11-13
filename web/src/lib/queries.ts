@@ -10,6 +10,7 @@ import { api } from "./api";
 import type {
   AddCandidateInput,
   ApplicationFilters,
+  CopilotRequest,
   CreateJobInput,
   Stage,
 } from "./types";
@@ -99,4 +100,11 @@ export function useMoveStage(jobId: string) {
   });
 }
 
-
+export function useAskCopilot(jobId: string) {
+  // Auto-scoring saves scores, so refresh the board after every answer.
+  const invalidate = useInvalidateJob(jobId);
+  return useMutation({
+    mutationFn: (input: CopilotRequest) => api.askCopilot(jobId, input),
+    onSuccess: invalidate,
+  });
+}

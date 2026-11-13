@@ -44,6 +44,7 @@ export const createJobSchema = z.object({
   skills: z.array(skill).min(1, "Add at least one required skill").max(20, "Add 20 skills at most"),
   minExperienceYears: numberField("Experience", { min: 0, max: 50, integer: true }),
   skillsWeight: z.number().int().min(0).max(100),
+  screeningPassCount: numberField("Number of candidates", { min: 1, max: 100, integer: true }),
   closingDate: z
     .string()
     .trim()

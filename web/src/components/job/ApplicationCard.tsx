@@ -14,7 +14,7 @@ export function ApplicationCard({
   jobId: string;
   application: Application;
 }) {
-  const { candidate, allowedNextStages } = application;
+  const { candidate, allowedNextStages, score, scoreSummary, passedScreening } = application;
   const move = useMoveStage(jobId);
   const [confirmReject, setConfirmReject] = useState(false);
 
@@ -50,6 +50,23 @@ export function ApplicationCard({
           </span>
         )}
       </p>
+
+      {score !== null && (
+        <div className="mt-2 space-y-1">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset ${
+              passedScreening ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-zinc-100 text-zinc-600 ring-zinc-200"
+            }`}
+          >
+            Score {score}/100{passedScreening ? " · passed" : ""}
+          </span>
+          {scoreSummary && (
+            <p className="line-clamp-2 text-xs text-zinc-500" title={scoreSummary}>
+              {scoreSummary}
+            </p>
+          )}
+        </div>
+      )}
 
       {allowedNextStages.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">

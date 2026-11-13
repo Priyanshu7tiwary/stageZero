@@ -3,6 +3,8 @@ import type {
   ApiErrorBody,
   Application,
   ApplicationFilters,
+  CopilotRequest,
+  CopilotResponse,
   CreateJobInput,
   DashboardStats,
   Job,
@@ -110,6 +112,12 @@ export const api = {
 
   addCandidate: (jobId: string, input: AddCandidateInput) =>
     request<Application>(`/jobs/${encodeURIComponent(jobId)}/applications`, {
+      method: "POST",
+      body: input,
+    }),
+
+  askCopilot: (jobId: string, input: CopilotRequest) =>
+    request<CopilotResponse>(`/jobs/${encodeURIComponent(jobId)}/copilot`, {
       method: "POST",
       body: input,
     }),

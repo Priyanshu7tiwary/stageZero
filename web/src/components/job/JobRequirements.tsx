@@ -38,6 +38,8 @@ export function JobRequirements({ job }: { job: Job }) {
         <dd>
           Skills {job.skillsWeight}% · Experience {100 - job.skillsWeight}%
         </dd>
+        <dt className="text-zinc-500">Auto-scoring</dt>
+        <dd>Top {job.screeningPassCount} in Applied pass</dd>
         <dt className="text-zinc-500">Applications</dt>
         <dd>{closingText(job)}</dd>
       </dl>
