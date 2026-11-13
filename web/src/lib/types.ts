@@ -17,6 +17,31 @@ export type Stage = (typeof STAGES)[number];
 export const JOB_STATUSES = ["OPEN", "CLOSED"] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
+// ---- Auth ----
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface SignupInput extends LoginInput {
+  name: string;
+}
+
+/** What the API returns on login, refresh and /auth/me. The tokens themselves
+ *  are in httpOnly cookies and never reach this code. */
+export interface Session {
+  user: User;
+  /** ISO time the access token expires; the app refreshes shortly before. */
+  accessTokenExpiresAt: string;
+}
+
 // ---- Pipeline ----
 
 export interface Job {

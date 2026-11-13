@@ -27,6 +27,14 @@ services:
       PORT: 4000
       CORS_ORIGIN: http://localhost:${WEB_PORT:-3000}
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Kolkata}
+      # Sign-in: JWT signing secret and the account created on first start.
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string-0123456789}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-recruiter@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password123}
+      ADMIN_NAME: ${ADMIN_NAME:-Demo Recruiter}
+      # Cookies over http on localhost; set to true behind HTTPS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
     ports:

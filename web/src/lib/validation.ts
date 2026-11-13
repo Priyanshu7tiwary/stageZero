@@ -29,6 +29,28 @@ function numberField(label: string, opts: { min: number; max: number; integer?: 
 
 const skill = z.string().trim().min(1).max(40, "Each skill must be 40 characters or fewer");
 
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .pipe(z.email("Enter a valid email address")),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const signupSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(120, "Name must be 120 characters or fewer"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .pipe(z.email("Enter a valid email address")),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(200, "Password must be 200 characters or fewer"),
+});
+
 export const createJobSchema = z.object({
   title: z
     .string()

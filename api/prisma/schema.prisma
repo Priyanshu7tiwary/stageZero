@@ -79,3 +79,29 @@ model Application {
   @@index([jobId, stage])
 }
 
+
+/// A recruiter who can sign in.
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  refreshTokens RefreshToken[]
+}
+
+/// One refresh token. Only a SHA-256 hash is stored, never the token itself.
+/// Every login starts a "family"; each refresh replaces the token with a new
+/// one in the same family. Reusing a replaced token revokes the whole family.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  familyId  String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+}

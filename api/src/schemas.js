@@ -39,6 +39,20 @@ const calendarDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD')
   .refine((s) => new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), 'Enter a valid date');
 
+export const loginSchema = z.object({
+  email,
+  password: z.string({ error: 'Password is required' }).min(1, 'Password is required').max(200),
+});
+
+export const signupSchema = z.object({
+  name: requiredText('Name', 120),
+  email,
+  password: z
+    .string({ error: 'Password is required' })
+    .min(8, 'Password must be at least 8 characters')
+    .max(200, 'Password must be 200 characters or fewer'),
+});
+
 const stage = z.enum(STAGES, { error: `Stage must be one of ${STAGES.join(', ')}` });
 
 export const createJobSchema = z.object({
