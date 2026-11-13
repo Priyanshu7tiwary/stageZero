@@ -1,0 +1,111 @@
+"use client";
+
+import { useState } from "react";
+import { errorMessage } from "@/lib/api";
+import { useMoveStage } from "@/lib/queries";
+import { stageLabel } from "@/lib/stages";
+import type { Application, Stage } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
+
+export function ApplicationCard({
+  jobId,
+  application,
+}: {
+  jobId: string;
+  application: Application;
+}) {
+  const { candidate, allowedNextStages } = application;
+  const move = useMoveStage(jobId);
+  const [confirmReject, setConfirmReject] = useState(false);
+
+  const forward = allowedNextStages.filter((s) => s !== "REJECTED");
+  const canReject = allowedNextStages.includes("REJECTED");
+  const pendingStage = move.isPending ? move.variables?.stage : undefined;
+
+  const moveTo = (stage: Stage) =>
+    move.mutate(
+      { applicationId: application.id, stage },
+      { onSettled: () => setConfirmReject(false) },
+    );
+
+  return (
+    <article className="rounded-md bg-white p-3 shadow-sm ring-1 ring-zinc-200">
+      <p className="truncate text-sm font-medium" title={candidate.fullName}>
+        {candidate.fullName}
+      </p>
+      <p className="truncate text-xs text-zinc-500" title={candidate.email}>
+        {candidate.email}
+      </p>
+      {candidate.phone && <p className="text-xs text-zinc-500">{candidate.phone}</p>}
+
+      <p className="mt-2 text-xs text-zinc-600">
+        <span className="font-medium text-zinc-800">
+          {candidate.experienceYears} {candidate.experienceYears === 1 ? "yr" : "yrs"}
+        </span>
+        {candidate.skills.length > 0 && (
+          <span title={candidate.skills.join(", ")}>
+            {" · "}
+            {candidate.skills.slice(0, 3).join(", ")}
+            {candidate.skills.length > 3 && ` +${candidate.skills.length - 3}`}
+          </span>
+        )}
+      </p>
+
+      {allowedNextStages.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {confirmReject ? (
+            <>
+              <Button
+                size="sm"
+                variant="danger"
+                loading={pendingStage === "REJECTED"}
+                onClick={() => moveTo("REJECTED")}
+              >
+                Confirm reject
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={move.isPending}
+                onClick={() => setConfirmReject(false)}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              {forward.map((stage) => (
+                <Button
+                  key={stage}
+                  size="sm"
+                  loading={pendingStage === stage}
+                  disabled={move.isPending}
+                  onClick={() => moveTo(stage)}
+                >
+                  Move to {stageLabel(stage)}
+                </Button>
+              ))}
+              {canReject && (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  disabled={move.isPending}
+                  onClick={() => setConfirmReject(true)}
+                >
+                  Reject
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {move.isError && (
+        <p role="alert" className="mt-2 text-xs text-rose-600">
+          {errorMessage(move.error)}
+        </p>
+      )}
+    </article>
+  );
+}
+

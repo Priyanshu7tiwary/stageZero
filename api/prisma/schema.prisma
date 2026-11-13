@@ -1,0 +1,75 @@
+// Data model for the applicant tracker.
+// After editing: `npm run db:migrate` (creates a migration and regenerates the client).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+/// Pipeline stages. Allowed moves between them live in src/lib/stages.js.
+enum Stage {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+model Job {
+  id                 String        @id @default(cuid())
+  title              String
+  location           String
+  status             JobStatus     @default(OPEN)
+  /// Skills the role requires.
+  skills             String[]
+  minExperienceYears Int           @default(0)
+  /// 0–100: how much skills count against experience (experience gets the rest).
+  skillsWeight       Int           @default(50)
+  /// Last day applications are accepted. Null = no deadline.
+  closingDate        DateTime?     @db.Date
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  applications       Application[]
+}
+
+/// A person. Email is unique, so one candidate can apply to many jobs.
+model Candidate {
+  id              String        @id @default(cuid())
+  fullName        String
+  email           String        @unique
+  phone           String?
+  skills          String[]
+  experienceYears Float         @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  applications    Application[]
+}
+
+/// Links one candidate to one job and holds where they are in the pipeline.
+model Application {
+  id          String     @id @default(cuid())
+  jobId       String
+  candidateId String
+  stage       Stage      @default(APPLIED)
+  /// Came in through a referral (referral flow to come).
+  referred    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate   Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  /// A candidate can apply to a job only once.
+  @@unique([jobId, candidateId])
+  @@index([jobId, stage])
+}
+

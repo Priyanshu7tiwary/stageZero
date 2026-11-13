@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Generated Prisma client (rebuilt by `npm install` via postinstall / `prisma generate`)
+**/src/generated/
+
+# Environment / secrets (keep the examples)
+.env
+.env.*
+!.env.example
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+
+# AI assistant files
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.claude/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Deploy tooling
+.vercel
