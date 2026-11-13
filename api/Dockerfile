@@ -10,5 +10,5 @@ RUN npm ci
 
 COPY src ./src
 EXPOSE 4000
-# Bring the database schema up to date, then start the API.
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]
+# Bring the schema up to date, load demo data into an empty database, start the API.
+CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js --if-empty && node src/server.js"]
