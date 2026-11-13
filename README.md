@@ -53,7 +53,7 @@ Rules:
 
 ## Decisions
 
-- **JavaScript backend.** I chose plain JavaScript for readability and no build step, and validate every request with zod. This departs from the brief's TypeScript backend.
+- **One stretch goal: login with a protected API.** The brief allows at most one, so I chose login and deliberately skipped the others (drag-and-drop, stage history log, pagination).
 - **Stage rules live only on the server.** The API returns `allowedNextStages`, and the UI renders just those.
 - **The copilot never writes stage changes itself.** It returns proposals; the UI confirms them through the normal endpoint.
 - **Groq `openai/gpt-oss-120b`:** free tier, tool calling and strict JSON output.
@@ -69,7 +69,6 @@ Rules:
 
 ## Trade-offs and known gaps
 
-- **Untyped backend.** It's JavaScript, not TypeScript.
 - **The copilot can only move Applied → Screening** (a deliberate guardrail). The brief's example "Move Priya Sharma to Interview" is refused and the copilot points to the card button. Removing `copilotCanMove()` restores it.
 - **`auto_score` saves scores without asking.** Only moves need confirmation.
 - **"Only when asked" is a prompt rule** for auto-scoring, not enforced in code.
