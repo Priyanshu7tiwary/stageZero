@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { useAuth } from "@/lib/auth";
 
 interface NavItem {
   href: string;
@@ -66,38 +65,6 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
         );
       })}
     </ul>
-  );
-}
-
-function UserFooter() {
-  const { state, signOut } = useAuth();
-  const router = useRouter();
-  if (state.status !== "authenticated") return null;
-  const { user } = state;
-
-  return (
-    <div className="flex items-center gap-2.5 border-t border-zinc-200 px-3 py-3">
-      <span
-        aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white"
-      >
-        {user.name.charAt(0).toUpperCase()}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{user.name}</p>
-        <p className="truncate text-xs text-zinc-500">{user.email}</p>
-      </div>
-      <button
-        type="button"
-        onClick={() => {
-          signOut();
-          router.replace("/login");
-        }}
-        className="rounded-md px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-      >
-        Sign out
-      </button>
-    </div>
   );
 }
 
@@ -173,7 +140,6 @@ export function Sidebar() {
         <nav className="flex-1 overflow-y-auto px-3 py-2">
           <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
         </nav>
-        <UserFooter />
       </aside>
     </>
   );

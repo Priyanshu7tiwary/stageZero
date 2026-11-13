@@ -29,15 +29,6 @@ function numberField(label: string, opts: { min: number; max: number; integer?: 
 
 const skill = z.string().trim().min(1).max(40, "Each skill must be 40 characters or fewer");
 
-export const loginSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .pipe(z.email("Enter a valid email address")),
-  password: z.string().min(1, "Password is required"),
-});
-
 export const createJobSchema = z.object({
   title: z
     .string()
@@ -59,7 +50,6 @@ export const createJobSchema = z.object({
     .refine((v) => v === "" || /^\d{4}-\d{2}-\d{2}$/.test(v), "Enter a valid date")
     .refine((v) => v === "" || v >= todayISO(), "Closing date can't be in the past")
     .transform((v) => v || null),
-  screeningPassCount: numberField("Number of candidates", { min: 1, max: 500, integer: true }),
 });
 
 export const addCandidateSchema = z.object({

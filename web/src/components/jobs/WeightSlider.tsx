@@ -3,7 +3,7 @@
 import { useId } from "react";
 
 /**
- * One slider sets the skills ↔ experience trade-off for the AI score.
+ * One slider sets how much skills count against experience for this job.
  * The two weights always add up to 100%.
  */
 export function WeightSlider({
@@ -19,7 +19,7 @@ export function WeightSlider({
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="block text-sm font-medium text-zinc-700">
-        Screening weight
+        Skills vs experience
       </label>
       <div className="flex items-center justify-between text-sm">
         <span>

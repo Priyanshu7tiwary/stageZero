@@ -4,7 +4,7 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/api";
 import { useMoveStage } from "@/lib/queries";
 import { stageLabel } from "@/lib/stages";
-import type { Application, ScreeningResult, Stage } from "@/lib/types";
+import type { Application, Stage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 
 export function ApplicationCard({
@@ -14,7 +14,7 @@ export function ApplicationCard({
   jobId: string;
   application: Application;
 }) {
-  const { candidate, allowedNextStages, screening } = application;
+  const { candidate, allowedNextStages } = application;
   const move = useMoveStage(jobId);
   const [confirmReject, setConfirmReject] = useState(false);
 
@@ -50,8 +50,6 @@ export function ApplicationCard({
           </span>
         )}
       </p>
-
-      {screening && <ScreeningBadge screening={screening} />}
 
       {allowedNextStages.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -111,35 +109,3 @@ export function ApplicationCard({
   );
 }
 
-function ScreeningBadge({ screening }: { screening: ScreeningResult }) {
-  return (
-    <div className="mt-2 space-y-1">
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset ${
-          screening.passed
-            ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-            : "bg-zinc-100 text-zinc-600 ring-zinc-200"
-        }`}
-        title={`AI screening score ${screening.score}/100 (skills ${screening.skillsScore}, experience ${screening.experienceScore}${
-          screening.referralBonus ? `, +${screening.referralBonus} referral` : ""
-        })`}
-      >
-        <span aria-hidden="true">{screening.passed ? "✓" : "–"}</span>
-        {screening.passed ? "Passed" : "Not passed"}
-        <span className="tabular-nums opacity-70">· {screening.score}/100</span>
-      </span>
-      {screening.referralBonus > 0 && (
-        <span
-          className="ml-1 inline-flex items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-sky-700 ring-1 ring-sky-200 ring-inset"
-          title={`Referred: +${screening.referralBonus} added to the score`}
-        >
-          +{screening.referralBonus}
-          <span className="sr-only"> referral bonus</span>
-        </span>
-      )}
-      <p className="line-clamp-2 text-xs text-zinc-500" title={screening.summary}>
-        {screening.summary}
-      </p>
-    </div>
-  );
-}

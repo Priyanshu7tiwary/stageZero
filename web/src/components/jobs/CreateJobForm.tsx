@@ -21,7 +21,6 @@ interface Values {
   minExperienceYears: string;
   skillsWeight: number;
   closingDate: string;
-  screeningPassCount: string;
 }
 
 const EMPTY: Values = {
@@ -30,9 +29,8 @@ const EMPTY: Values = {
   status: "OPEN",
   skills: [],
   minExperienceYears: "",
-  skillsWeight: 60,
+  skillsWeight: 50,
   closingDate: "",
-  screeningPassCount: "5",
 };
 
 function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
@@ -122,7 +120,7 @@ export function CreateJobForm({
         </div>
       </Section>
 
-      <Section title="Requirements" description="What the AI screening checks candidates against.">
+      <Section title="Requirements">
         <TagInput
           label="Skills required"
           placeholder="e.g. Node.js, PostgreSQL, TypeScript"
@@ -144,24 +142,9 @@ export function CreateJobForm({
             error={errors.minExperienceYears}
           />
         </div>
+        <WeightSlider skillsWeight={values.skillsWeight} onChange={(w) => set("skillsWeight", w)} />
       </Section>
 
-      <Section title="AI screening" description="How candidates in Applied are scored and how many go through.">
-        <WeightSlider skillsWeight={values.skillsWeight} onChange={(w) => set("skillsWeight", w)} />
-        <div className="sm:w-1/2">
-          <TextField
-            label="Candidates who pass screening"
-            hint="(top scores)"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={500}
-            value={values.screeningPassCount}
-            onChange={(e) => set("screeningPassCount", e.target.value)}
-            error={errors.screeningPassCount}
-          />
-        </div>
-      </Section>
 
       <Section title="Applications">
         <div className="sm:w-1/2">

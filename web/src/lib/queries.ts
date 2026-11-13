@@ -10,7 +10,6 @@ import { api } from "./api";
 import type {
   AddCandidateInput,
   ApplicationFilters,
-  CopilotRequest,
   CreateJobInput,
   Stage,
 } from "./types";
@@ -100,17 +99,4 @@ export function useMoveStage(jobId: string) {
   });
 }
 
-export function useRunScreening(jobId: string) {
-  const invalidate = useInvalidateJob(jobId);
-  return useMutation({
-    mutationFn: () => api.runScreening(jobId),
-    onSuccess: invalidate,
-  });
-}
-
-export function useAskCopilot(jobId: string) {
-  return useMutation({
-    mutationFn: (input: CopilotRequest) => api.askCopilot(jobId, input),
-  });
-}
 

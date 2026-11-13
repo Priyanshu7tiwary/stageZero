@@ -3,16 +3,10 @@ import type {
   ApiErrorBody,
   Application,
   ApplicationFilters,
-  CopilotRequest,
-  CopilotResponse,
   CreateJobInput,
   DashboardStats,
   Job,
-  LoginInput,
-  LoginResponse,
-  ScreeningRun,
   Stage,
-  User,
 } from "./types";
 
 export const API_URL =
@@ -40,27 +34,12 @@ function isErrorBody(body: unknown): body is ApiErrorBody {
   );
 }
 
-// ---- Session token ----
-// Held in memory for requests; AuthProvider persists it and registers the
-// handler that runs when the API rejects the token (expired / signed out).
-let authToken: string | null = null;
-let onUnauthorized: (() => void) | null = null;
-
-export function setAuthToken(token: string | null) {
-  authToken = token;
-}
-
-export function setUnauthorizedHandler(handler: (() => void) | null) {
-  onUnauthorized = handler;
-}
-
 async function request<T>(
   path: string,
   init: { method?: string; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {};
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
-  if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
   let res: Response;
   try {
@@ -82,9 +61,6 @@ async function request<T>(
   const body: unknown = await res.json().catch(() => null);
 
   if (!res.ok) {
-    // A 401 on a request that carried a token means the session is no longer
-    // valid. (A failed login has no token, so it just shows its error.)
-    if (res.status === 401 && authToken) onUnauthorized?.();
     if (isErrorBody(body)) {
       throw new ApiError(
         res.status,
@@ -108,11 +84,6 @@ function toQuery(params: Record<string, string | undefined>): string {
 }
 
 export const api = {
-  login: (input: LoginInput) =>
-    request<LoginResponse>("/auth/login", { method: "POST", body: input }),
-
-  me: (signal?: AbortSignal) => request<User>("/auth/me", { signal }),
-
   getDashboard: (signal?: AbortSignal) =>
     request<DashboardStats>("/dashboard", { signal }),
 
@@ -149,16 +120,6 @@ export const api = {
       { method: "PATCH", body: { stage } },
     ),
 
-  runScreening: (jobId: string) =>
-    request<ScreeningRun>(`/jobs/${encodeURIComponent(jobId)}/screening`, {
-      method: "POST",
-    }),
-
-  askCopilot: (jobId: string, input: CopilotRequest) =>
-    request<CopilotResponse>(`/jobs/${encodeURIComponent(jobId)}/copilot`, {
-      method: "POST",
-      body: input,
-    }),
 };
 
 export function errorMessage(err: unknown): string {

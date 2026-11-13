@@ -11,6 +11,9 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 
+# Generated Prisma client (rebuilt by `npm install` via postinstall / `prisma generate`)
+**/src/generated/
+
 # Environment / secrets (keep the examples)
 .env
 .env.*
