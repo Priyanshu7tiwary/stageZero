@@ -8,7 +8,7 @@ import {
   allowedNextStages,
   canTransition,
   COPILOT_MOVE_REFUSAL,
-  COPILOT_TO_STAGE,
+  COPILOT_TARGET_STAGES,
   copilotCanMove,
   STAGE_LABELS,
   STAGES,
@@ -25,8 +25,9 @@ const SYSTEM_PROMPT = `You are a recruiting assistant for ONE job. Help the recr
 Rules:
 - Answer ONLY from the job data below and your tools' results. Never invent candidates or facts.
 - If the data doesn't answer the question, say you don't know.
-- You may ONLY move candidates from Applied to Screening. Never propose any other move: not Screening to Interview, not later stages, not rejections. If asked for one, say the recruiter must do it with the buttons on the candidate's card.
-- To move candidates from Applied to Screening, call move_stage. It does NOT move anyone: the recruiter confirms in the app. Say who you propose to move and that they need to confirm. Never say a move is done.
+- You may ONLY propose two kinds of move: Applied to Screening, and rejecting a candidate who is not Hired or already Rejected. Never propose Interview, Offer or Hired moves. If asked for one, say the recruiter must do it with the buttons on the candidate's card.
+- To propose a move, call move_stage. It does NOT move anyone: the recruiter confirms in the app. Say who you propose to move or reject and that they need to confirm. Never say a move is done.
+- Only propose a rejection when the recruiter asks for it.
 - If move_stage says a move isn't allowed, explain why.
 - Call auto_score ONLY when the recruiter explicitly asks to score, screen or rank applicants. It scores candidates in the Applied stage and proposes moving the ones who pass to Screening.
 - If a name matches more than one candidate, or none, say so instead of guessing.
@@ -51,12 +52,12 @@ const TOOLS = [
     function: {
       name: 'move_stage',
       description:
-        'Proposes moving one or more applications from Applied to Screening (the only move the assistant may make). Nothing moves until the recruiter confirms. Any other move is refused.',
+        'Proposes moving one or more applications from Applied to Screening, or rejecting candidates who are not Hired or already Rejected. These are the only moves the assistant may make. Nothing moves until the recruiter confirms. Any other move is refused with the reason.',
       parameters: {
         type: 'object',
         properties: {
           application_ids: { type: 'array', items: { type: 'string' }, description: 'Application ids to move.' },
-          to_stage: { type: 'string', enum: [COPILOT_TO_STAGE], description: 'Always SCREENING.' },
+          to_stage: { type: 'string', enum: COPILOT_TARGET_STAGES, description: 'SCREENING (only from Applied) or REJECTED.' },
         },
         required: ['application_ids', 'to_stage'],
       },

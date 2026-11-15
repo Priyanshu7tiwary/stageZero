@@ -68,7 +68,6 @@ describe('copilot', () => {
   // Even if the AI ignores its instructions and asks, the code refuses.
   it.each([
     ['Screening -> Interview', 'app-1', 'INTERVIEW'],
-    ['Applied -> Rejected', 'app-2', 'REJECTED'],
     ['Applied -> Interview (skipping a stage)', 'app-2', 'INTERVIEW'],
     ['Hired -> anything', 'app-3', 'SCREENING'],
   ])('refuses %s even when the AI asks for it', async (_label, id, toStage) => {
@@ -77,15 +76,34 @@ describe('copilot', () => {
     const res = await askCopilot('job-1', { question: 'move them', history: [] });
 
     expect(res.pendingActions).toEqual([]);
-    expect(toolResult()).toMatch(/not allowed\. The assistant can only move candidates from Applied to Screening/);
+    expect(toolResult()).toMatch(/not allowed\. The assistant can only move candidates from Applied to Screening, or reject/);
   });
 
-  it('tells the AI it may only move Applied -> Screening', async () => {
+  it.each([
+    ['Applied', 'app-2', 'APPLIED'],
+    ['Screening', 'app-1', 'SCREENING'],
+  ])('proposes rejecting a candidate in %s (still needs confirmation)', async (_label, id, fromStage) => {
+    chat.mockResolvedValueOnce(callTool('move_stage', { application_ids: [id], to_stage: 'REJECTED' })).mockResolvedValueOnce(say('Confirm to reject.'));
+
+    const res = await askCopilot('job-1', { question: 'Reject them', history: [] });
+
+    expect(res.pendingActions).toEqual([expect.objectContaining({ applicationId: id, fromStage, toStage: 'REJECTED' })]);
+    expect(prisma.application.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses to reject a Hired candidate (final stage)", async () => {
+    chat.mockResolvedValueOnce(callTool('move_stage', { application_ids: ['app-3'], to_stage: 'REJECTED' })).mockResolvedValueOnce(say('Not allowed.'));
+    const res = await askCopilot('job-1', { question: 'Reject Neha', history: [] });
+    expect(res.pendingActions).toEqual([]);
+    expect(toolResult()).toMatch(/not allowed/);
+  });
+
+  it('tells the AI exactly which moves it may propose', async () => {
     chat.mockResolvedValueOnce(say('ok'));
     await askCopilot('job-1', { question: 'hi', history: [] });
     const { messages, tools } = chat.mock.calls[0][0];
-    expect(messages[0].content).toMatch(/ONLY move candidates from Applied to Screening/);
-    expect(tools.find((t) => t.function.name === 'move_stage').function.parameters.properties.to_stage.enum).toEqual(['SCREENING']);
+    expect(messages[0].content).toMatch(/ONLY propose two kinds of move: Applied to Screening, and rejecting/);
+    expect(tools.find((t) => t.function.name === 'move_stage').function.parameters.properties.to_stage.enum).toEqual(['SCREENING', 'REJECTED']);
   });
 
   it("can't propose moves for another job's applications", async () => {

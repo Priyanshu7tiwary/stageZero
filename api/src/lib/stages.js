@@ -42,16 +42,19 @@ export function transitionError(from, to) {
   return `Can't move from ${fromLabel} to ${STAGE_LABELS[to]}. From ${fromLabel} the next stage can only be ${allowed}.`;
 }
 
-// The AI assistant may only make this one move: Applied -> Screening (the
-// first step, which is what auto-scoring proposes). Every other move, including
-// later stages and rejections, must be done by the recruiter with the card
-// buttons. Checked in code, so it holds whatever the AI decides.
-export const COPILOT_FROM_STAGE = 'APPLIED';
-export const COPILOT_TO_STAGE = 'SCREENING';
+// The AI assistant may only propose two kinds of move:
+//   - Applied -> Screening (the first step; what auto-scoring proposes)
+//   - Rejected, from any stage that can still be rejected (not Hired or Rejected)
+// Interview, Offer and Hired moves must be made by the recruiter with the card
+// buttons. Checked in code, so it holds whatever the AI decides, and every
+// proposal still needs the recruiter's confirmation.
+export const COPILOT_TARGET_STAGES = ['SCREENING', 'REJECTED'];
 
 export function copilotCanMove(from, to) {
-  return from === COPILOT_FROM_STAGE && to === COPILOT_TO_STAGE;
+  if (to === 'SCREENING') return from === 'APPLIED';
+  if (to === 'REJECTED') return canTransition(from, 'REJECTED');
+  return false;
 }
 
 export const COPILOT_MOVE_REFUSAL =
-  'The assistant can only move candidates from Applied to Screening. Any other move (later stages or rejecting) must be done by the recruiter with the buttons on the candidate\'s card.';
+  "The assistant can only move candidates from Applied to Screening, or reject candidates who aren't Hired or already Rejected. Any other move must be done by the recruiter with the buttons on the candidate's card.";

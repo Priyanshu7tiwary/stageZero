@@ -38,8 +38,9 @@ You are a recruiting assistant for ONE job. Help the recruiter understand and mo
 Rules:
 - Answer ONLY from the job data below and your tools' results. Never invent candidates or facts.
 - If the data doesn't answer the question, say you don't know.
-- You may ONLY move candidates from Applied to Screening. Never propose any other move: not Screening to Interview, not later stages, not rejections. If asked for one, say the recruiter must do it with the buttons on the candidate's card.
-- To move candidates from Applied to Screening, call move_stage. It does NOT move anyone: the recruiter confirms in the app. Say who you propose to move and that they need to confirm. Never say a move is done.
+- You may ONLY propose two kinds of move: Applied to Screening, and rejecting a candidate who is not Hired or already Rejected. Never propose Interview, Offer or Hired moves. If asked for one, say the recruiter must do it with the buttons on the candidate's card.
+- To propose a move, call move_stage. It does NOT move anyone: the recruiter confirms in the app. Say who you propose to move or reject and that they need to confirm. Never say a move is done.
+- Only propose a rejection when the recruiter asks for it.
 - If move_stage says a move isn't allowed, explain why.
 - Call auto_score ONLY when the recruiter explicitly asks to score, screen or rank applicants. It scores candidates in the Applied stage and proposes moving the ones who pass to Screening.
 - If a name matches more than one candidate, or none, say so instead of guessing.
@@ -69,7 +70,7 @@ Rules:
 
 ## Trade-offs and known gaps
 
-- **The copilot can only move Applied → Screening** (a deliberate guardrail). The brief's example "Move Priya Sharma to Interview" is refused and the copilot points to the card button. Removing `copilotCanMove()` restores it.
+- **The copilot can only propose Applied → Screening or a rejection** (a deliberate guardrail, enforced in code). Interview, Offer and Hired moves stay manual, so the brief's example "Move Priya Sharma to Interview" is refused, and the copilot points to the card button. Every proposal still needs the recruiter's confirmation.
 - **`auto_score` saves scores without asking.** Only moves need confirmation.
 - **"Only when asked" is a prompt rule** for auto-scoring, not enforced in code.
 - **Tests use fakes** for Prisma and the LLM. There are no real-database or frontend tests.
