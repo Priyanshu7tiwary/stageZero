@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import { dateToDay, isAcceptingApplications } from '../lib/dates.js';
+import { mergeProfile } from '../lib/candidates.js';
 import { conflict, notFound } from '../lib/errors.js';
 import { canTransition, transitionError } from '../lib/stages.js';
 import { applicationJson } from '../serializers.js';
@@ -34,39 +35,54 @@ export async function addCandidate(jobId, input) {
   }
 
   const { referred, ...profile } = input;
-  try {
-    // One transaction: if anything fails, nothing is saved.
-    const app = await prisma.$transaction(async (tx) => {
-      const existing = await tx.candidate.findUnique({ where: { email: profile.email } });
+  const alreadyApplied = (name) => conflict('ALREADY_APPLIED', `${name} has already applied to this job.`);
 
-      if (existing) {
-        const alreadyApplied = await tx.application.findUnique({
-          where: { jobId_candidateId: { jobId, candidateId: existing.id } },
-        });
-        if (alreadyApplied) {
-          throw conflict('ALREADY_APPLIED', `${existing.fullName} has already applied to this job.`);
-        }
-      }
-
-      // Known email: keep their name, refresh contact details and profile.
-      const candidate = existing
-        ? await tx.candidate.update({
-            where: { id: existing.id },
-            data: { phone: profile.phone ?? existing.phone, skills: profile.skills, experienceYears: profile.experienceYears },
-          })
-        : await tx.candidate.create({ data: profile });
-
-      return tx.application.create({ data: { jobId, candidateId: candidate.id, referred }, include: withDetails });
-    });
-    return applicationJson(app);
-  } catch (err) {
-    // Two requests at the same moment both pass the check above; the database's
-    // unique (jobId, candidateId) index stops the second one.
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw conflict('ALREADY_APPLIED', `${profile.fullName} has already applied to this job.`);
+  // If two requests create the same NEW candidate at the same moment (e.g. the
+  // same email added to two jobs), one loses the race on the unique email. That
+  // isn't an error: retrying finds the candidate the other request just created.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const app = await applyOnce(jobId, profile, referred, alreadyApplied);
+      return applicationJson(app);
+    } catch (err) {
+      if (isUniqueViolation(err, 'Candidate') && attempt < 3) continue;
+      // Same person, same job, at the same moment: the unique (jobId, candidateId)
+      // index stops the second one.
+      if (isUniqueViolation(err, 'Application')) throw alreadyApplied(profile.fullName);
+      throw err;
     }
-    throw err;
   }
+}
+
+// One attempt, in a transaction: if anything fails, nothing is saved.
+function applyOnce(jobId, profile, referred, alreadyApplied) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.candidate.findUnique({ where: { email: profile.email } });
+
+    if (existing) {
+      const applied = await tx.application.findUnique({
+        where: { jobId_candidateId: { jobId, candidateId: existing.id } },
+      });
+      if (applied) throw alreadyApplied(existing.fullName);
+    }
+
+    // Known email: keep their name and MERGE the profile so nothing is lost
+    // on their other applications (see lib/candidates.js).
+    const candidate = existing
+      ? await tx.candidate.update({ where: { id: existing.id }, data: mergeProfile(existing, profile) })
+      : await tx.candidate.create({ data: profile });
+
+    return tx.application.create({ data: { jobId, candidateId: candidate.id, referred }, include: withDetails });
+  });
+}
+
+// Did a unique constraint on this model's table fail? (Prisma error P2002)
+function isUniqueViolation(err, model) {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== 'P2002') return false;
+  if (err.meta?.modelName) return err.meta.modelName === model;
+  // Older error shapes only name the columns/constraint.
+  const target = JSON.stringify(err.meta?.target ?? '');
+  return model === 'Candidate' ? target.includes('email') : target.includes('jobId');
 }
 
 // Move an application to a new stage, enforcing the stage rules.

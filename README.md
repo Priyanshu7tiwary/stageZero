@@ -62,7 +62,7 @@ Rules:
 ## Assumptions
 
 - Moves only go forward; Hired and Rejected are final.
-- A known email reuses the candidate and refreshes their phone, skills and experience.
+- A known email reuses the candidate and merges their profile: skills are combined, the higher experience is kept, and a new phone number replaces the old one. Name and email don't change. Applying again never wipes what other jobs see.
 - The closing date is inclusive, in `APP_TIMEZONE`.
 - `referred` is a flag; the referral flow isn't built.
 - Every signed-in user is a recruiter.

@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { Prisma } from '@prisma/client';
+
 // Replace the real database with a fake, so these tests need no Postgres.
-const prisma = { application: { findUnique: vi.fn(), updateMany: vi.fn() } };
+const prisma = {
+  job: { findUnique: vi.fn() },
+  candidate: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+  application: { findUnique: vi.fn(), updateMany: vi.fn(), create: vi.fn() },
+  // The fake transaction just runs the callback with the same fake client.
+  $transaction: vi.fn((fn) => fn(prisma)),
+};
 vi.mock('../src/db.js', () => ({ prisma }));
 
-const { moveStage } = await import('../src/services/applications.service.js');
+const { moveStage, addCandidate } = await import('../src/services/applications.service.js');
 
 const row = (stage) => ({
   id: 'app-1',
@@ -54,5 +62,62 @@ describe('moveStage', () => {
   it('returns 404 for an unknown application', async () => {
     prisma.application.findUnique.mockResolvedValue(null);
     await expect(moveStage('nope', 'SCREENING')).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+// The error Prisma throws when a unique index rejects an insert.
+const uniqueError = (modelName, target) =>
+  new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: 'test', meta: { modelName, target } });
+
+describe('addCandidate', () => {
+  const job = { id: 'job-2', status: 'OPEN', closingDate: null };
+  const input = { fullName: 'Asha Verma', email: 'asha@example.com', phone: null, skills: [], experienceYears: 0, referred: false };
+  const asha = { id: 'c-1', fullName: 'Asha Verma', email: 'asha@example.com', phone: null, skills: ['SQL', 'Python'], experienceYears: 5 };
+  const created = (candidate) => ({ ...row('APPLIED'), jobId: 'job-2', candidate });
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    prisma.$transaction.mockImplementation((fn) => fn(prisma));
+    prisma.job.findUnique.mockResolvedValue(job);
+  });
+
+  it("merges an existing candidate's profile instead of wiping it", async () => {
+    prisma.candidate.findUnique.mockResolvedValue(asha);
+    prisma.application.findUnique.mockResolvedValue(null);
+    prisma.candidate.update.mockImplementation(async ({ data }) => ({ ...asha, ...data }));
+    prisma.application.create.mockImplementation(async () => created({ ...asha }));
+
+    await addCandidate('job-2', input);
+
+    expect(prisma.candidate.update).toHaveBeenCalledWith({
+      where: { id: 'c-1' },
+      data: { skills: ['SQL', 'Python'], experienceYears: 5, phone: null },
+    });
+  });
+
+  it('retries when another request created the same new candidate a moment earlier', async () => {
+    // Attempt 1: nobody has this email yet, but creating it loses the race.
+    // Attempt 2: the candidate now exists and is reused.
+    prisma.candidate.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(asha);
+    prisma.candidate.create.mockRejectedValueOnce(uniqueError('Candidate', ['email']));
+    prisma.application.findUnique.mockResolvedValue(null);
+    prisma.candidate.update.mockImplementation(async ({ data }) => ({ ...asha, ...data }));
+    prisma.application.create.mockImplementation(async () => created(asha));
+
+    const app = await addCandidate('job-2', input);
+
+    expect(app.candidate.email).toBe('asha@example.com');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(prisma.application.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('still answers 409 ALREADY_APPLIED when the same person hits the same job twice at once', async () => {
+    prisma.candidate.findUnique.mockResolvedValue(asha);
+    prisma.application.findUnique.mockResolvedValue(null);
+    prisma.candidate.update.mockResolvedValue(asha);
+    prisma.application.create.mockRejectedValue(uniqueError('Application', ['jobId', 'candidateId']));
+
+    await expect(addCandidate('job-2', input)).rejects.toMatchObject({ status: 409, code: 'ALREADY_APPLIED' });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });
